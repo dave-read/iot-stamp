@@ -246,7 +246,7 @@
       }
     },
     {
-      "apiVersion": "[variables('iotHubName')]",
+      "apiVersion": "[variables('iotApiVersion')]",
       "dependsOn": [
         "[concat('Microsoft.Devices/iothubs/', variables('iotHubName'))]"
       ],
