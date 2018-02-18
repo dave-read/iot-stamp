@@ -1,0 +1,137 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "eventHubNames": {
+      "type": "array",
+      "metadata": {
+        "description": "Names of the Event Hubs"
+      }
+    },
+    "messageRetentionInDays": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 7,
+      "metadata": {
+        "description": "How long to retain the data in Event Hub"
+      }
+    },
+    "partitionCount": {
+      "type": "int",
+      "defaultValue": 4,
+      "minValue": 2,
+      "maxValue": 32,
+      "metadata": {
+        "description": "Number of partitions chosen"
+      }
+    },
+    "isAutoInflateEnabled": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "maximumThroughputUnits": {
+      "type": "int",
+      "defaultValue": 7
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard"
+    },
+    "consumerGroupName": {
+      "type": "string",
+      "defaultValue": "AF"
+    },
+    "accessPolicyName": {
+      "type": "string",
+      "defaultValue": "iotHubSend"
+    }
+
+  },
+  "variables": {
+    "ehVersion": "2017-04-01",
+    "eventHubNamespaceName": "[concat('eh',uniqueString(subscription().id, resourceGroup().name))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-04-01",
+      "name": "[variables('eventHubNamespaceName')]",
+      "type": "Microsoft.EventHub/namespaces",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "namespace"
+      },
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "properties": {
+        "isAutoInflateEnabled": "[parameters('isAutoInflateEnabled')]",
+        "maximumThroughputUnits": "[parameters('maximumThroughputUnits')]"
+      }
+    },
+    {
+      "apiVersion": "[variables('ehVersion')]",
+      "name": "[concat(variables('eventHubNamespaceName'),'/',parameters('accessPolicyName'))]",
+      "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+      "tags": {
+        "displayName": "authRules"
+      },
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.EventHub/namespaces/', variables('eventHubNamespaceName'))]"
+      ],
+      "properties": {
+        "rights": [
+          "Manage",
+          "Send",
+          "Listen"
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2017-04-01",
+      "tags": {
+        "displayName": "eventHubs"
+      },
+      "copy": {
+        "name": "eventHubLoop",
+        "count": "[length(parameters('eventHubNames'))]"
+      },
+      "name": "[concat(variables('eventHubNamespaceName'),'/',parameters('eventHubNames')[copyIndex()])]",
+      "dependsOn": [
+        "[concat('Microsoft.EventHub/namespaces/', variables('eventHubNamespaceName'))]"
+      ],
+      "properties": {
+        "messageRetentionInDays": "[parameters('messageRetentionInDays')]",
+        "partitionCount": "[parameters('partitionCount')]"
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+      "apiVersion": "[variables('ehVersion')]",
+      "tags": {
+        "displayName": "consumerGroups"
+      },
+      "copy": {
+        "name": "consumerGroupLoop",
+        "count": "[length(parameters('eventHubNames'))]"
+      },
+
+      "location": "[resourceGroup().location]",
+      "name": "[concat(variables('eventHubNamespaceName'),'/',parameters('eventHubNames')[copyIndex()],'/',parameters('consumerGroupName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs',variables('eventHubNamespaceName'),parameters('eventHubNames')[copyIndex()])]"
+      ],
+      "properties": {
+      }
+    }
+  ],
+  "outputs": {
+    "eventHubNamespaceName": {
+      "type": "string",
+      "value": "[variables('eventHubNamespaceName')]"
+    }
+  }
+}

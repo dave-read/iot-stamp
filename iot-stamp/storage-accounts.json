@@ -1,0 +1,68 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "stampName": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard_LRS"
+    }
+  },
+  "variables": {
+    "storageApiVersion": "2016-01-01",
+    "iotHubRaw": "[concat('iotraw',uniqueString(subscription().id,resourceGroup().name,parameters('stampName')))]",
+    "iotHubRawRef": "[resourceId('Microsoft.Storage/storageAccounts',variables('iotHubRaw'))]",
+    "asaJobRef": "[concat('asaref',uniqueString(subscription().id,resourceGroup().name,parameters('stampName')))]",
+    "asaJobRefRef": "[resourceId('Microsoft.Storage/storageAccounts',variables('asaJobRef'))]"
+  },
+  "resources": [
+    {
+      "name": "[variables('iotHubRaw')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-01-01",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "iotHubRaw"
+      },
+      "kind": "Storage"
+    },
+    {
+      "name": "[variables('asaJobRef')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-01-01",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "asaJobRef"
+      },
+      "kind": "Storage"
+    }
+  ],
+  "outputs": {
+    "iotHubRaw": {
+      "type": "string",
+      "value": "[variables('iotHubRaw')]"
+    },
+    "iotHubRawKeys": {
+      "type": "object",
+      "value": "[listKeys(variables('iotHubRaw'),variables('storageApiVersion'))]"
+    },
+    "asaJobRef": {
+      "type": "string",
+      "value": "[variables('asaJobRef')]"
+    },
+    "asaJobRefKeys": {
+      "type": "object",
+      "value": "[listKeys(variables('asaJobRefRef'),variables('storageApiVersion'))]"
+    }
+  }
+}

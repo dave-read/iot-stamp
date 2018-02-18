@@ -1,0 +1,263 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+
+    "eventHubNamespaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the EventHub namespace"
+      }
+    },
+    "rawEventsStorageAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the raw events storage account"
+      }
+    },
+    "rawEventsContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the raw events storage account container"
+      }
+    },
+
+    "accessPolicyName": {
+      "type": "string",
+      "defaultValue": "iotHubSend"
+    },
+    "skuName": {
+      "type": "string",
+      "allowedValues": [
+        "F1",
+        "S1",
+        "S2"
+      ],
+      "defaultValue": "F1",
+      "metadata": {
+        "description": "One of the supported SKUs: F1, S1 or S2"
+      }
+    },
+    "capacityUnits": {
+      "type": "int",
+      "minValue": 1,
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Number of desired IoT Hub units. Restricted to 1 unit for F1. Can be set up to maximum number allowed for subscription."
+      }
+    },
+    "d2cMessageRetentionInDaysPeriod": {
+      "type": "int",
+      "minValue": 1,
+      "maxValue": 7,
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Retention time in days for device-to-cloud messages."
+      }
+    },
+    "d2cPartitionCount": {
+      "type": "int",
+      "minValue": 2,
+      "maxValue": 128,
+      "metadata": {
+        "description": "Number of desired partitions for device-to-cloud event ingestion."
+      }
+    },
+    "c2dMessagesTTLAsIso8601": {
+      "type": "string",
+      "defaultValue": "PT1H",
+      "metadata": {
+        "description": "Default TTL in ISO_8601 format for cloud-to-device messages. The value can range from PT1M to PT2D (or any other format as per ISO_8601 standards for duration)."
+      }
+    },
+    "c2dMessagesMaxDeliveryCount": {
+      "type": "int",
+      "minValue": 1,
+      "maxValue": 100,
+      "defaultValue": 10,
+      "metadata": {
+        "description": "Maximum delivery count for cloud-to-device messages per-device queues."
+      }
+    },
+    "c2dFeebackMessagesTTLAsIso8601": {
+      "type": "string",
+      "defaultValue": "PT1H",
+      "metadata": {
+        "description": "TTL in ISO_8601 format for service-bound feedback messages. The value can range from PT1M to PT2D (or any other format as per ISO_8601 standards for duration)."
+      }
+    },
+    "c2dFeedbackMessagesMaxDeliveryCount": {
+      "type": "int",
+      "minValue": 1,
+      "maxValue": 100,
+      "defaultValue": 10,
+      "metadata": {
+        "description": "Maximum delivery count for feedback queue."
+      }
+    },
+    "c2dFeedbackMessagesLockDurationAsIso8601": {
+      "type": "string",
+      "defaultValue": "PT60S",
+      "metadata": {
+        "description": "Lock duration in ISO_8601 format for service-bound feedback messages. The value can range from PT5S to PT300S (or any other format as per ISO_8601 standards for duration)."
+      }
+    },
+    "d2cConsumerGroupName": {
+      "type": "string",
+      "minLength": 3,
+      "defaultValue": "cg1",
+      "metadata": {
+        "description": "Name of device-to-cloud consumer group to provision on the IoT Hub instance."
+      }
+    }
+  },
+  "variables": {
+    "iotApiVersion": "2017-07-01",
+    "storageApiVersion": "2016-01-01",
+    "iotHubName": "[concat('ih',uniqueString(subscription().id, resourceGroup().name))]",
+    "location": "[resourceGroup().location]",
+    "ehNamespaceRef": "[resourceId('Microsoft.EventHub/namespaces/',parameters('eventHubNamespaceName'))]",
+    "ehSasKeyRef": "[concat(variables('ehNamespaceRef'), '/authorizationRules/',parameters('accessPolicyName'))]",
+    "rawEventsStorageRef": "[resourceId('Microsoft.Storage/storageAccounts',parameters('rawEventsStorageAccount'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Devices/iotHubs",
+      "apiVersion": "[variables('iotApiVersion')]",
+      "location": "[variables('location')]",
+      "name": "[variables('iotHubName')]",
+      "properties": {
+        "operationsMonitoringProperties": {
+          "events": {
+            "None": "None",
+            "Connections": "None",
+            "DeviceTelemetry": "None",
+            "C2DCommands": "None",
+            "DeviceIdentityOperations": "None",
+            "FileUploadOperations": "None",
+            "Routes": "None"
+          }
+        },
+        "routing": {
+          "endpoints": {
+
+            "storageContainers": [
+              {
+                "connectionString": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('rawEventsStorageAccount'),';AccountKey=',listKeys(variables('rawEventsStorageRef'),variables('storageApiVersion')).keys[0].value)]",
+                "name": "rawEvents",
+                "subscriptionId": "[subscription().subscriptionId]",
+                "resourceGroup": "[resourceGroup().name]",
+                "containerName": "[parameters('rawEventsContainerName')]",
+                "batchFrequencyInSeconds": 300,
+                "maxChunkSizeInBytes": 314572800,
+                "encoding": "avro"
+              }
+            ],
+            "eventHubs": [
+              {
+                "connectionString": "[concat(listKeys(variables('ehSasKeyRef'),'2017-04-01').primaryConnectionString,';EntityPath=custom-sensor-reading-events')]",
+                "name": "custom-sensor-reading-events",
+                "subscriptionId": "[subscription().subscriptionId]",
+                "resourceGroup": "[resourceGroup().name]"
+              },
+              {
+                "connectionString": "[concat(listKeys(variables('ehSasKeyRef'),'2017-04-01').primaryConnectionString,';EntityPath=custom-threshold-reading-events')]",
+                "name": "custom-threshold-reading-events",
+                "subscriptionId": "[subscription().subscriptionId]",
+                "resourceGroup": "[resourceGroup().name]"
+              },
+              {
+                "connectionString": "[concat(listKeys(variables('ehSasKeyRef'),'2017-04-01').primaryConnectionString,';EntityPath=custom-misc-reading-events')]",
+                "name": "custom-misc-reading-events",
+                "subscriptionId": "[subscription().subscriptionId]",
+                "resourceGroup": "[resourceGroup().name]"
+              },
+              {
+                "connectionString": "[concat(listKeys(variables('ehSasKeyRef'),'2017-04-01').primaryConnectionString,';EntityPath=custom-ict-events')]",
+                "name": "custom-ict-events",
+                "subscriptionId": "[subscription().subscriptionId]",
+                "resourceGroup": "[resourceGroup().name]"
+              }
+            ]
+          },
+          "routes": [
+            {
+              "name": "sensor-readings-events-route",
+              "source": "DeviceMessages",
+              "condition": "is_defined($body.sensorDetails.cc)",
+              "endpointNames": [
+                "custom-sensor-reading-events"
+              ],
+              "isEnabled": true
+            },
+            {
+              "name": "threshold-events-route",
+              "source": "DeviceMessages",
+              "condition": "is_defined($body.thresholdDetails.cc)",
+              "endpointNames": [
+                "custom-threshold-reading-events"
+              ],
+              "isEnabled": true
+            },
+            {
+              "name": "misc-events-route",
+              "source": "DeviceMessages",
+              "condition": "is_defined($body.miscDetails.cc)",
+              "endpointNames": [
+                "custom-misc-reading-events"
+              ],
+              "isEnabled": true
+            },
+            {
+              "name": "energy-readings-route",
+              "source": "DeviceMessages",
+              "condition": "module-source= \"energy\"",
+              "endpointNames": [
+                "custom-ict-events"
+              ],
+              "isEnabled": true
+            }
+          ]
+        },
+
+        "eventHubEndpoints": {
+          "events": {
+            "retentionTimeInDays": "[parameters('d2cMessageRetentionInDaysPeriod')]",
+            "partitionCount": "[parameters('d2cPartitionCount')]"
+          },
+          "operationsMonitoringEvents": {
+            "retentionTimeInDays": "[parameters('d2cMessageRetentionInDaysPeriod')]",
+            "partitionCount": "[parameters('d2cPartitionCount')]"
+          }
+        },
+        "cloudToDevice": {
+          "defaultTtlAsIso8601": "[parameters('c2dMessagesTTLAsIso8601')]",
+          "maxDeliveryCount": "[parameters('c2dMessagesMaxDeliveryCount')]",
+          "feedback": {
+            "maxDeliveryCount": "[parameters('c2dFeedbackMessagesMaxDeliveryCount')]",
+            "ttlAsIso8601": "[parameters('c2dFeebackMessagesTTLAsIso8601')]",
+            "lockDurationAsIso8601": "[parameters('c2dFeedbackMessagesLockDurationAsIso8601')]"
+          }
+        }
+      },
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "capacity": "[parameters('capacityUnits')]"
+      }
+    },
+    {
+      "apiVersion": "[variables('iotHubName')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/iothubs/', variables('iotHubName'))]"
+      ],
+      "name": "[concat(variables('iotHubName'), '/events/',parameters('d2cConsumerGroupName'))]",
+      "type": "Microsoft.Devices/iotHubs/eventhubEndpoints/ConsumerGroups"
+    }
+  ],
+  "outputs": {
+    "iotHubName": {
+      "type": "string",
+      "value": "[variables('iotHubName')]"
+    }
+  }
+}

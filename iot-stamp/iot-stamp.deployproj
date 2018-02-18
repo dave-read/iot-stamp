@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>38b04e78-8a36-468a-a555-881d2b15d2be</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>Deployment</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>1.0</TargetFrameworkVersion>
+    <PrepareForBuildDependsOn>
+    </PrepareForBuildDependsOn>
+  </PropertyGroup>
+  <Import Condition=" Exists('Deployment.targets') " Project="Deployment.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <!-- vertag<:>start tokens<:>maj.min -->
+  <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
+  <!-- vertag<:>end -->
+  <ItemGroup>
+    <None Include="asa.json" />
+    <None Include="asa.parameters.json" />
+    <None Include="Deployment.targets">
+      <Visible>False</Visible>
+    </None>
+    <Content Include="Deploy-AzureResourceGroup.ps1" />
+    <Content Include="document-db.json" />
+    <Content Include="document-db.parameters.json" />
+    <Content Include="event-hub-with-capture.json" />
+    <Content Include="event-hub-with-capture.parameters.json" />
+    <Content Include="function-app.json" />
+    <Content Include="function-app.parameters.json" />
+    <Content Include="iot-hub.json" />
+    <Content Include="iot-hub.parameters.json" />
+    <Content Include="event-hub.json" />
+    <Content Include="event-hub.parameters.json" />
+  </ItemGroup>
+  <Target Name="GetReferenceAssemblyPaths" />
+</Project>
