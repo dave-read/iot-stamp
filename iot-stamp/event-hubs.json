@@ -2,6 +2,10 @@
   "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "eventHubNamespaceName": {
+      "type": "string",
+      "defaultValue": ""
+    },
     "eventHubNames": {
       "type": "array",
       "metadata": {
@@ -50,7 +54,7 @@
   },
   "variables": {
     "ehVersion": "2017-04-01",
-    "eventHubNamespaceName": "[concat('eh',uniqueString(subscription().id, resourceGroup().name))]"
+    "eventHubNamespaceName": "[if(not(empty(parameters('eventHubNamespaceName'))),parameters('eventHubNamespaceName'),concat('eh',uniqueString(subscription().id, resourceGroup().name)))]"
   },
   "resources": [
     {

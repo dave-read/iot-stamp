@@ -8,6 +8,6 @@ ARM templates and scripts used to stand up a fully contains set of services with
 - ASA Job that connects to IOT Hub to query for specific events
 
 The script that runs the templates in the correct order is [create-stamp.sh](iot-stamp/create-stamp.sh)
-This project is a work in process and should not be used for production deployments.
+This project is a work in process and should not be used for production deployments.  Evetually these template can be combined when there's a more clear picture of the dependencies.
 
 

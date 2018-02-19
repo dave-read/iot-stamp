@@ -39,8 +39,9 @@
     <Content Include="function-app.parameters.json" />
     <Content Include="iot-hub.json" />
     <Content Include="iot-hub.parameters.json" />
-    <Content Include="event-hub.json" />
-    <Content Include="event-hub.parameters.json" />
+    <Content Include="event-hubs.json" />
+    <Content Include="event-hubs.parameters.json" />
+    <None Include="storage-accounts.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>

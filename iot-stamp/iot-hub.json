@@ -3,6 +3,10 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
 
+    "iotHubName": {
+      "type": "string",
+      "defaultValue": ""
+    },
     "eventHubNamespaceName": {
       "type": "string",
       "metadata": {
@@ -114,7 +118,7 @@
   "variables": {
     "iotApiVersion": "2017-07-01",
     "storageApiVersion": "2016-01-01",
-    "iotHubName": "[concat('ih',uniqueString(subscription().id, resourceGroup().name))]",
+    "iotHubName": "[if(not(empty(parameters('eventHubNamespaceName'))),parameters('eventHubNamespaceName'),concat('ih',uniqueString(subscription().id, resourceGroup().name)))]",
     "location": "[resourceGroup().location]",
     "ehNamespaceRef": "[resourceId('Microsoft.EventHub/namespaces/',parameters('eventHubNamespaceName'))]",
     "ehSasKeyRef": "[concat(variables('ehNamespaceRef'), '/authorizationRules/',parameters('accessPolicyName'))]",

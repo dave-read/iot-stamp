@@ -79,7 +79,21 @@ iotHub=$(az group deployment create \
    --parameters rawEventsContainerName=$IOT_HUB_STORAGE_CONTAINER)
 echo "event hubs deployment done:$iotHub"
 
+# Create CosmosDB instance
+echo "creating CosmosDB deployment"
+db=$(az group deployment create \
+   --name cosmos-db \
+   --resource-group $RG \
+   --template-file document-db.json )
+ echo "document db deployment done:$db"
 
+# Functions
+echo "creating functions deployment"
+functionApp=$(az group deployment create \
+   --name functions \
+   --resource-group $RG \
+   --template-file function-app.json )
+ echo "function app deployment done:$functionApp"
 
 
 

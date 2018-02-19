@@ -4,10 +4,18 @@
   "parameters": {
     "databaseAccountName": {
       "type": "string",
-      "minLength": 3,
+      "defaultValue": "",
       "metadata": {
         "description": "The DocumentDB database account name."
       }
+    },
+    "kind": {
+      "type": "string",
+      "allowedValues": [
+        "GlobalDocumentDB",
+        "MongoDB"
+      ],
+      "defaultValue": "GlobalDocumentDB"
     },
     "consistencyLevel": {
       "type": "string",
@@ -42,16 +50,18 @@
     }
   },
   "variables": {
-    "offerType": "Standard"
+    "offerType": "Standard",
+    "databaseAccountName": "[if(not(empty(parameters('databaseAccountName'))),parameters('databaseAccountName'),concat('db',uniqueString(subscription().id, resourceGroup().name)))]"
   },
   "resources": [
     {
       "apiVersion": "2015-04-08",
       "type": "Microsoft.DocumentDB/databaseAccounts",
-      "name": "[parameters('databaseAccountName')]",
+      "name": "[variables('databaseAccountName')]",
       "location": "[resourceGroup().location]",
       "properties": {
-        "name": "[parameters('databaseAccountName')]",
+        "name": "[variables('databaseAccountName')]",
+        "kind": "[parameters('kind')]",
         "databaseAccountOfferType": "[variables('offerType')]",
         "consistencyPolicy": {
           "defaultConsistencyLevel": "[parameters('consistencyLevel')]",
@@ -60,5 +70,11 @@
         }
       }
     }
-  ]
+  ],
+  "outputs": {
+    "eventHubNamespaceName": {
+      "type": "string",
+      "value": "[variables('databaseAccountName')]"
+    }
+  }
 }
